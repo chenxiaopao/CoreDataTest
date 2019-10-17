@@ -154,14 +154,38 @@
 }
 
 #pragma mark - Getter
-- (NSManagedObjectContext *)context{
-    if (!_context){
-        AppDelegate *delegate = (AppDelegate *)UIApplication.sharedApplication.delegate;
-        _context = delegate.persistentContainer.viewContext;
+//- (NSManagedObjectContext *)context{
+//    if (!_context){
+//        AppDelegate *delegate = (AppDelegate *)UIApplication.sharedApplication.delegate;
+//        _context = delegate.persistentContainer.viewContext;
+//    }
+//    return _context;
+//}
+
+- (NSManagedObjectContext *)context {
+    if (!_context) {
+        //从本地加载 NSManagedObjectModel(对象模型)
+        NSURL *url = [[NSBundle mainBundle] URLForResource:@"CoreData_Obj" withExtension:@"momd"];
+        NSManagedObjectModel *manageModel = [[NSManagedObjectModel alloc]initWithContentsOfURL:url];
+        
+        //创建本地数据库 NSPersistentStoreCoordinator(数据库协调器)
+        NSPersistentStoreCoordinator *coordinator = [[NSPersistentStoreCoordinator alloc]initWithManagedObjectModel:manageModel];
+        NSString *dataPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).lastObject;
+        dataPath = [dataPath stringByAppendingFormat:@"/%@.sqlite", @"ChatList"];
+        
+        NSError *error;
+        [coordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:[NSURL fileURLWithPath:dataPath] options:nil error:&error];
+        if (error) {
+            NSLog(@"error:%@", error);
+        }
+        
+        //数据库关联到缓存区域 NSManagedObjectContext(托管对象管理)
+        NSManagedObjectContext *context = [[NSManagedObjectContext alloc]initWithConcurrencyType:NSMainQueueConcurrencyType];
+        context.persistentStoreCoordinator = coordinator;
+        _context = context;
     }
     return _context;
 }
-
 
 #pragma mark - 链式调用
 
